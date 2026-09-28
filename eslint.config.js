@@ -1,6 +1,7 @@
 import js from '@eslint/js';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import prettier from 'eslint-config-prettier';
+import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
@@ -23,6 +24,11 @@ export default defineConfig(
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_', ignoreRestSiblings: true },
       ],
     },
+  },
+  {
+    files: ['client/src/**/*.{ts,tsx}'],
+    extends: [reactHooks.configs.flat['recommended-latest']],
+    languageOptions: { globals: globals.browser },
   },
   // Turn off formatting rules that would conflict with Prettier; must stay last.
   prettier,

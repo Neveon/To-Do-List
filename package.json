@@ -15,8 +15,10 @@
   "devDependencies": {
     "@eslint/js": "^9.39.5",
     "@types/node": "^24.19.0",
+    "concurrently": "^10.0.5",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.12.0",
     "prettier": "^3.9.9",
     "typescript": "~6.0.3",
@@ -33,8 +35,13 @@
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test",
     "test": "vitest run",
     "test:watch": "vitest",
-    "dev": "npm run dev -w server",
+    "dev": "concurrently --names api,web --prefix-colors blue,green --kill-others-on-fail \"npm run dev -w server\" \"npm run dev -w client\"",
     "build": "npm run build --workspaces --if-present",
     "start": "npm run start -w server"
+  },
+  "allowScripts": {
+    "esbuild": false,
+    "fsevents": false,
+    "msw": false
   }
 }
