@@ -7,13 +7,21 @@ describe('loadConfig', () => {
     expect(loadConfig({})).toEqual({
       port: 3000,
       dataFile: path.resolve('data/todos.json'),
+      clientDistDir: path.resolve(import.meta.dirname, '../../client/dist'),
     });
   });
 
-  it('reads PORT and DATA_FILE', () => {
-    expect(loadConfig({ PORT: '8080', DATA_FILE: '/var/lib/todos/todos.json' })).toEqual({
+  it('reads PORT, DATA_FILE and CLIENT_DIST_DIR', () => {
+    expect(
+      loadConfig({
+        PORT: '8080',
+        DATA_FILE: '/var/lib/todos/todos.json',
+        CLIENT_DIST_DIR: '/srv/todo-client',
+      }),
+    ).toEqual({
       port: 8080,
       dataFile: '/var/lib/todos/todos.json',
+      clientDistDir: '/srv/todo-client',
     });
   });
 
