@@ -26,6 +26,14 @@ export function createTodoRouter(todoService: TodoService): Router {
     res.json(await todoService.update(req.params.id, updateTodoSchema.parse(req.body)));
   });
 
+  router.post('/:id/complete', async (req, res) => {
+    res.json(await todoService.complete(req.params.id));
+  });
+
+  router.post('/:id/incomplete', async (req, res) => {
+    res.json(await todoService.incomplete(req.params.id));
+  });
+
   router.delete('/:id', async (req, res) => {
     await todoService.delete(req.params.id);
     res.status(204).end();

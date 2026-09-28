@@ -194,6 +194,56 @@ describe('PATCH /api/todos/:id', () => {
   });
 });
 
+describe('POST /api/todos/:id/complete and /incomplete', () => {
+  it('marks a todo as completed and responds 200 with it', async () => {
+    const todo = await createTodo();
+
+    const response = await request(app).post(`/api/todos/${todo.id}/complete`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ...todo, isCompleted: true });
+    expect((await request(app).get(`/api/todos/${todo.id}`)).body).toEqual(response.body);
+  });
+
+  it('marks a completed todo as not completed and responds 200 with it', async () => {
+    const todo = await createTodo();
+    await request(app).post(`/api/todos/${todo.id}/complete`).expect(200);
+
+    const response = await request(app).post(`/api/todos/${todo.id}/incomplete`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ...todo, isCompleted: false });
+    expect((await request(app).get(`/api/todos/${todo.id}`)).body).toEqual(response.body);
+  });
+
+  it('is idempotent, so repeating a request is safe', async () => {
+    const todo = await createTodo();
+
+    await request(app).post(`/api/todos/${todo.id}/complete`).expect(200);
+    const completedTwice = await request(app).post(`/api/todos/${todo.id}/complete`);
+    expect(completedTwice.body).toMatchObject({ isCompleted: true });
+
+    await request(app).post(`/api/todos/${todo.id}/incomplete`).expect(200);
+    const reopenedTwice = await request(app).post(`/api/todos/${todo.id}/incomplete`);
+    expect(reopenedTwice.body).toMatchObject({ isCompleted: false });
+  });
+
+  it('changes nothing but the completion status', async () => {
+    const todo = await createTodo({ title: 'Pay rent', description: 'x', dueDate: '2026-10-01' });
+
+    const response = await request(app).post(`/api/todos/${todo.id}/complete`);
+
+    expect(response.body).toEqual({ ...todo, isCompleted: true });
+  });
+
+  it.each(['complete', 'incomplete'])('responds 404 on %s for an unknown id', async (action) => {
+    const response = await request(app).post(`/api/todos/does-not-exist/${action}`);
+
+    expect(response.status).toBe(404);
+    expect(response.body).toMatchObject({ error: { code: 'NOT_FOUND' } });
+  });
+});
+
 describe('DELETE /api/todos/:id', () => {
   it('removes the todo and responds 204 with no body', async () => {
     const todo = await createTodo();
