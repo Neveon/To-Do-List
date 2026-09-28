@@ -133,3 +133,21 @@ button {
 .button--danger {
   color: var(--danger);
 }
+
+.list-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+select {
+  font: inherit;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+}
+
+[aria-busy='true'] .todo-list {
+  opacity: 0.6;
+}

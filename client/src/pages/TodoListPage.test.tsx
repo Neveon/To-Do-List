@@ -2,6 +2,7 @@ import type { CreateTodoInput, Todo } from '@todo/shared';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
+import { useLocation } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { makeTodo } from '../test/make-todo';
 import { renderWithRouter } from '../test/render';
@@ -128,5 +129,84 @@ describe('TodoListPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not update "Buy milk": Gone');
     expect(checkbox).not.toBeChecked();
     expect(checkbox).toBeEnabled();
+  });
+});
+
+describe('TodoListPage filtering and sorting', () => {
+  /** Serves an empty list and records each list request's query string. */
+  function captureListQueries(response: Todo[] = []) {
+    const queries: string[] = [];
+    server.use(
+      http.get('/api/todos', ({ request }) => {
+        queries.push(new URL(request.url).search);
+        return HttpResponse.json(response);
+      }),
+    );
+    return queries;
+  }
+
+  function LocationProbe() {
+    return <output data-testid="location">{useLocation().search}</output>;
+  }
+
+  function renderAt(route: string) {
+    const user = userEvent.setup();
+    renderWithRouter(
+      <>
+        <TodoListPage />
+        <LocationProbe />
+      </>,
+      { route },
+    );
+    return { user };
+  }
+
+  it('loads the filter and sort from the URL', async () => {
+    const queries = captureListQueries();
+
+    renderAt('/?status=overdue&sortBy=dueDate&order=desc');
+
+    expect(screen.getByLabelText('Show')).toHaveValue('overdue');
+    expect(screen.getByLabelText('Sort by')).toHaveValue('dueDate');
+    expect(screen.getByLabelText('Order')).toHaveValue('desc');
+    await waitFor(() => expect(queries).toEqual(['?status=overdue&sortBy=dueDate&order=desc']));
+  });
+
+  it('requests the new list and updates the URL when a control changes', async () => {
+    const queries = captureListQueries();
+    const { user } = renderAt('/');
+    await waitFor(() => expect(queries).toEqual(['?status=all&sortBy=createdAt&order=asc']));
+
+    await user.selectOptions(screen.getByLabelText('Show'), 'Completed');
+    await user.selectOptions(screen.getByLabelText('Sort by'), 'Title');
+
+    await waitFor(() => expect(queries.at(-1)).toBe('?status=completed&sortBy=title&order=asc'));
+    expect(screen.getByTestId('location')).toHaveTextContent('?status=completed&sortBy=title');
+  });
+
+  it('drops default values from the URL', async () => {
+    captureListQueries();
+    const { user } = renderAt('/?status=completed');
+
+    await user.selectOptions(screen.getByLabelText('Show'), 'All');
+
+    expect(screen.getByTestId('location')).toBeEmptyDOMElement();
+  });
+
+  it('ignores invalid values in the URL', async () => {
+    const queries = captureListQueries();
+
+    renderAt('/?status=done&order=sideways');
+
+    expect(screen.getByLabelText('Show')).toHaveValue('all');
+    await waitFor(() => expect(queries).toEqual(['?status=all&sortBy=createdAt&order=asc']));
+  });
+
+  it('explains an empty result when a filter is active', async () => {
+    captureListQueries([]);
+
+    renderAt('/?status=overdue');
+
+    expect(await screen.findByText('No tasks match this filter.')).toBeInTheDocument();
   });
 });
