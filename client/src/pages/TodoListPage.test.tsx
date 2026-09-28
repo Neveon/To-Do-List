@@ -1,4 +1,4 @@
-import type { Todo } from '@todo/shared';
+import type { CreateTodoInput, Todo } from '@todo/shared';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -7,7 +7,7 @@ import { makeTodo } from '../test/make-todo';
 import { server } from '../test/server';
 import { TodoListPage } from './TodoListPage';
 
-/** A stateful fake of the list and completion endpoints, so toggles change what GET returns. */
+/** A stateful fake of the list, create and completion endpoints, so changes show up in GET. */
 function mockTodosApi(initial: Todo[]) {
   let todos = [...initial];
   const setCompleted =
@@ -19,6 +19,11 @@ function mockTodosApi(initial: Todo[]) {
 
   server.use(
     http.get('/api/todos', () => HttpResponse.json(todos)),
+    http.post('/api/todos', async ({ request }) => {
+      const todo = makeTodo((await request.json()) as CreateTodoInput);
+      todos = [...todos, todo];
+      return HttpResponse.json(todo, { status: 201 });
+    }),
     http.post('/api/todos/:id/complete', setCompleted(true)),
     http.post('/api/todos/:id/incomplete', setCompleted(false)),
   );
@@ -91,6 +96,20 @@ describe('TodoListPage', () => {
     await userEvent.click(checkbox);
 
     await waitFor(() => expect(checkbox).not.toBeChecked());
+  });
+
+  it('adds a new task and shows it in the list', async () => {
+    mockTodosApi([makeTodo({ title: 'Existing' })]);
+    const user = userEvent.setup();
+    render(<TodoListPage />);
+    await screen.findByText('Existing');
+
+    await user.type(screen.getByLabelText('Title'), 'Buy milk');
+    await user.click(screen.getByRole('button', { name: 'Add task' }));
+
+    expect(await screen.findByText('Buy milk')).toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')).toHaveLength(2);
+    expect(screen.getByLabelText('Title')).toHaveValue('');
   });
 
   it('shows an error and keeps the todo unchanged when saving fails', async () => {

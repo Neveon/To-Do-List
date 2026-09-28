@@ -1,6 +1,7 @@
-import { toLocalDateString, type Todo } from '@todo/shared';
+import { toLocalDateString, type CreateTodoInput, type Todo } from '@todo/shared';
 import { useState } from 'react';
-import { completeTodo, incompleteTodo } from '../api/todos';
+import { completeTodo, createTodo, incompleteTodo } from '../api/todos';
+import { TodoForm } from '../components/TodoForm';
 import { TodoItem } from '../components/TodoItem';
 import { useTodos } from '../hooks/useTodos';
 
@@ -9,6 +10,11 @@ export function TodoListPage() {
   const [savingId, setSavingId] = useState<string>();
   const [actionError, setActionError] = useState<string>();
   const today = toLocalDateString(new Date());
+
+  async function addTodo(input: CreateTodoInput) {
+    await createTodo(input);
+    reload();
+  }
 
   async function toggleCompleted(todo: Todo) {
     setSavingId(todo.id);
@@ -24,37 +30,44 @@ export function TodoListPage() {
   }
 
   return (
-    <section aria-labelledby="todo-list-heading">
-      <h2 id="todo-list-heading">Tasks</h2>
+    <>
+      <section aria-labelledby="new-todo-heading">
+        <h2 id="new-todo-heading">New task</h2>
+        <TodoForm submitLabel="Add task" onSubmit={addTodo} resetOnSuccess />
+      </section>
 
-      {actionError && <p role="alert">{actionError}</p>}
+      <section aria-labelledby="todo-list-heading">
+        <h2 id="todo-list-heading">Tasks</h2>
 
-      {error && (
-        <div role="alert">
-          <p>Could not load tasks: {error.message}</p>
-          <button type="button" onClick={reload}>
-            Try again
-          </button>
-        </div>
-      )}
+        {actionError && <p role="alert">{actionError}</p>}
 
-      {isLoading && !todos && <p role="status">Loading tasks…</p>}
+        {error && (
+          <div role="alert">
+            <p>Could not load tasks: {error.message}</p>
+            <button type="button" onClick={reload}>
+              Try again
+            </button>
+          </div>
+        )}
 
-      {todos?.length === 0 && <p>Nothing to do yet.</p>}
+        {isLoading && !todos && <p role="status">Loading tasks…</p>}
 
-      {todos && todos.length > 0 && (
-        <ul className="todo-list">
-          {todos.map((todo) => (
-            <TodoItem
-              key={todo.id}
-              todo={todo}
-              today={today}
-              onToggleCompleted={(target) => void toggleCompleted(target)}
-              isSaving={savingId === todo.id}
-            />
-          ))}
-        </ul>
-      )}
-    </section>
+        {todos?.length === 0 && <p>Nothing to do yet.</p>}
+
+        {todos && todos.length > 0 && (
+          <ul className="todo-list">
+            {todos.map((todo) => (
+              <TodoItem
+                key={todo.id}
+                todo={todo}
+                today={today}
+                onToggleCompleted={(target) => void toggleCompleted(target)}
+                isSaving={savingId === todo.id}
+              />
+            ))}
+          </ul>
+        )}
+      </section>
+    </>
   );
 }
