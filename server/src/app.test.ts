@@ -1,9 +1,12 @@
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
+import { InMemoryTodoRepository } from '../test/support/in-memory-todo.repository';
 import { createApp } from './app';
+import { TodoService } from './todos/todo.service';
 
 describe('createApp', () => {
-  const app = createApp({ logError: vi.fn() });
+  const todoService = new TodoService({ repository: new InMemoryTodoRepository() });
+  const app = createApp({ todoService, logError: vi.fn() });
 
   it('reports health at GET /api/health', async () => {
     const response = await request(app).get('/api/health');
