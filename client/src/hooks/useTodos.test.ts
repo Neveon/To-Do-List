@@ -1,5 +1,5 @@
 import type { ListTodosQueryParams } from '@todo/shared';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { delay, http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '../api/http';
@@ -39,20 +39,24 @@ describe('useTodos', () => {
 
   it('keeps the previous data visible while reloading', async () => {
     let calls = 0;
+    let releaseReload: () => void = () => undefined;
+    const reloadReleased = new Promise<void>((resolve) => (releaseReload = resolve));
     server.use(
       http.get('/api/todos', async () => {
-        calls += 1;
-        if (calls > 1) await delay(50);
-        return HttpResponse.json([makeTodo({ title: `call ${calls}` })]);
+        const call = ++calls;
+        // Hold the reload's response until the test has checked the in-between state.
+        if (call > 1) await reloadReleased;
+        return HttpResponse.json([makeTodo({ title: `call ${call}` })]);
       }),
     );
     const { result } = renderHook(() => useTodos());
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    result.current.reload();
+    act(() => result.current.reload());
 
-    await waitFor(() => expect(result.current.isLoading).toBe(true));
+    expect(result.current.isLoading).toBe(true);
     expect(result.current.data?.[0]?.title).toBe('call 1');
+    releaseReload();
     await waitFor(() => expect(result.current.data?.[0]?.title).toBe('call 2'));
     expect(result.current.isLoading).toBe(false);
   });
