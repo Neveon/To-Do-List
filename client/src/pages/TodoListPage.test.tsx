@@ -1,9 +1,10 @@
 import type { CreateTodoInput, Todo } from '@todo/shared';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { makeTodo } from '../test/make-todo';
+import { renderWithRouter } from '../test/render';
 import { server } from '../test/server';
 import { TodoListPage } from './TodoListPage';
 
@@ -36,7 +37,7 @@ describe('TodoListPage', () => {
       makeTodo({ title: 'Pay rent', dueDate: '2999-01-01', isCompleted: true }),
     ]);
 
-    render(<TodoListPage />);
+    renderWithRouter(<TodoListPage />);
 
     expect(screen.getByRole('status')).toHaveTextContent('Loading tasks…');
     const items = await screen.findAllByRole('listitem');
@@ -50,7 +51,7 @@ describe('TodoListPage', () => {
   it('shows an empty state when there are no todos', async () => {
     mockTodosApi([]);
 
-    render(<TodoListPage />);
+    renderWithRouter(<TodoListPage />);
 
     expect(await screen.findByText('Nothing to do yet.')).toBeInTheDocument();
     expect(screen.queryByRole('list')).not.toBeInTheDocument();
@@ -69,7 +70,7 @@ describe('TodoListPage', () => {
           : HttpResponse.json([makeTodo({ title: 'Recovered' })]);
       }),
     );
-    render(<TodoListPage />);
+    renderWithRouter(<TodoListPage />);
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not load tasks: Boom');
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
@@ -80,7 +81,7 @@ describe('TodoListPage', () => {
 
   it('marks an incomplete todo as completed', async () => {
     mockTodosApi([makeTodo({ title: 'Buy milk' })]);
-    render(<TodoListPage />);
+    renderWithRouter(<TodoListPage />);
     const checkbox = await screen.findByRole('checkbox', { name: 'Mark "Buy milk" as completed' });
 
     await userEvent.click(checkbox);
@@ -90,7 +91,7 @@ describe('TodoListPage', () => {
 
   it('marks a completed todo as not completed', async () => {
     mockTodosApi([makeTodo({ title: 'Buy milk', isCompleted: true })]);
-    render(<TodoListPage />);
+    renderWithRouter(<TodoListPage />);
     const checkbox = await screen.findByRole('checkbox', { name: 'Mark "Buy milk" as completed' });
 
     await userEvent.click(checkbox);
@@ -101,7 +102,7 @@ describe('TodoListPage', () => {
   it('adds a new task and shows it in the list', async () => {
     mockTodosApi([makeTodo({ title: 'Existing' })]);
     const user = userEvent.setup();
-    render(<TodoListPage />);
+    renderWithRouter(<TodoListPage />);
     await screen.findByText('Existing');
 
     await user.type(screen.getByLabelText('Title'), 'Buy milk');
@@ -119,7 +120,7 @@ describe('TodoListPage', () => {
         HttpResponse.json({ error: { code: 'NOT_FOUND', message: 'Gone' } }, { status: 404 }),
       ),
     );
-    render(<TodoListPage />);
+    renderWithRouter(<TodoListPage />);
     const checkbox = await screen.findByRole('checkbox', { name: 'Mark "Buy milk" as completed' });
 
     await userEvent.click(checkbox);

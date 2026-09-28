@@ -1,15 +1,16 @@
 import type { Todo } from '@todo/shared';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { makeTodo } from '../test/make-todo';
+import { renderWithRouter } from '../test/render';
 import { TodoItem } from './TodoItem';
 
 const TODAY = '2026-09-27';
 
 function renderItem(todo: Todo, props: Partial<Parameters<typeof TodoItem>[0]> = {}) {
   const onToggleCompleted = vi.fn();
-  render(
+  renderWithRouter(
     <ul>
       <TodoItem todo={todo} today={TODAY} onToggleCompleted={onToggleCompleted} {...props} />
     </ul>,
@@ -21,9 +22,15 @@ describe('TodoItem', () => {
   it('shows the title, due date and completion status', () => {
     renderItem(makeTodo({ title: 'Pay rent', dueDate: '2026-10-01', isCompleted: true }));
 
-    expect(screen.getByText('Pay rent')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Pay rent' })).toBeInTheDocument();
     expect(screen.getByText('2026-10-01')).toHaveAttribute('datetime', '2026-10-01');
     expect(screen.getByRole('checkbox', { name: 'Mark "Pay rent" as completed' })).toBeChecked();
+  });
+
+  it('links the title to the detail page', () => {
+    renderItem(makeTodo({ id: 'a/b', title: 'Pay rent' }));
+
+    expect(screen.getByRole('link', { name: 'Pay rent' })).toHaveAttribute('href', '/todos/a%2Fb');
   });
 
   it('omits the due date when there is none', () => {

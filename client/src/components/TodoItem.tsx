@@ -1,4 +1,5 @@
 import { isOverdue, type Todo } from '@todo/shared';
+import { Link } from 'react-router';
 
 interface TodoItemProps {
   todo: Todo;
@@ -21,7 +22,9 @@ export function TodoItem({ todo, today, onToggleCompleted, isSaving = false }: T
         disabled={isSaving}
         onChange={() => onToggleCompleted(todo)}
       />
-      <span className="todo-item__title">{todo.title}</span>
+      <Link className="todo-item__title" to={`/todos/${encodeURIComponent(todo.id)}`}>
+        {todo.title}
+      </Link>
       {todo.dueDate && (
         <span className="todo-item__due">
           Due <time dateTime={todo.dueDate}>{todo.dueDate}</time>

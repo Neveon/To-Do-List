@@ -5,7 +5,7 @@
   "description": "To-do list application: Express REST API + React SPA with JSON file storage",
   "license": "MIT",
   "engines": {
-    "node": ">=22.12"
+    "node": ">=22.22"
   },
   "workspaces": [
     "shared",
