@@ -12,3 +12,4 @@ export type {
   UpdateTodoInput,
   UpdateTodoRequest,
 } from './todo.schema';
+export type { ApiErrorCode, ApiErrorDetail, ApiErrorResponse } from './api-error';
