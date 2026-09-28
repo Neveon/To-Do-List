@@ -16,6 +16,13 @@ export default defineConfig(
         tsconfigRootDir: import.meta.dirname,
       },
     },
+    rules: {
+      // Allow intentionally unused names, e.g. `const { id: _id, ...rest } = todo`.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', ignoreRestSiblings: true },
+      ],
+    },
   },
   // Turn off formatting rules that would conflict with Prettier; must stay last.
   prettier,
