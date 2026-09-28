@@ -1,7 +1,14 @@
 import { randomUUID } from 'node:crypto';
-import type { CreateTodoInput, Todo, UpdateTodoInput } from '@todo/shared';
+import {
+  toLocalDateString,
+  type CreateTodoInput,
+  type ListTodosQuery,
+  type Todo,
+  type UpdateTodoInput,
+} from '@todo/shared';
 import { NotFoundError } from '../errors';
 import type { TodoRepository } from './repository/todo.repository';
+import { queryTodos } from './todo.query';
 
 export interface TodoServiceDependencies {
   repository: TodoRepository;
@@ -30,8 +37,10 @@ export class TodoService {
     this.#generateId = generateId;
   }
 
-  list(): Promise<Todo[]> {
-    return this.#repository.findAll();
+  /** Todos matching the query; "overdue" is judged against today's date in server local time. */
+  async list(query: ListTodosQuery): Promise<Todo[]> {
+    const todos = await this.#repository.findAll();
+    return queryTodos(todos, query, toLocalDateString(this.#now()));
   }
 
   async get(id: string): Promise<Todo> {

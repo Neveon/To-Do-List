@@ -48,11 +48,27 @@ describe('TodoService', () => {
   });
 
   describe('list', () => {
+    const allInCreationOrder = { status: 'all', sortBy: 'createdAt', order: 'asc' } as const;
+
     it('returns all todos', async () => {
       const first = await repository.create(makeTodo());
       const second = await repository.create(makeTodo());
 
-      expect(await service.list()).toEqual([first, second]);
+      expect(await service.list(allInCreationOrder)).toEqual([first, second]);
+    });
+
+    it('judges overdue todos against the injected clock', async () => {
+      const overdue = await repository.create(makeTodo({ dueDate: '2026-09-20' }));
+      await repository.create(makeTodo({ dueDate: '2026-10-05' }));
+
+      expect(await service.list({ ...allInCreationOrder, status: 'overdue' })).toEqual([overdue]);
+    });
+
+    it('applies the requested sort', async () => {
+      const b = await repository.create(makeTodo({ title: 'b' }));
+      const a = await repository.create(makeTodo({ title: 'a' }));
+
+      expect(await service.list({ status: 'all', sortBy: 'title', order: 'asc' })).toEqual([a, b]);
     });
   });
 

@@ -1,16 +1,17 @@
-import { createTodoSchema, updateTodoSchema } from '@todo/shared';
+import { createTodoSchema, listTodosQuerySchema, updateTodoSchema } from '@todo/shared';
 import { Router } from 'express';
 import type { TodoService } from './todo.service';
 
 /**
- * Maps HTTP requests to TodoService calls. Bodies are validated with the shared schemas;
- * validation and not-found errors propagate to the error handler, which sets the status.
+ * Maps HTTP requests to TodoService calls. Bodies and query strings are validated with the
+ * shared schemas; validation and not-found errors propagate to the error handler, which
+ * sets the status.
  */
 export function createTodoRouter(todoService: TodoService): Router {
   const router = Router();
 
-  router.get('/', async (_req, res) => {
-    res.json(await todoService.list());
+  router.get('/', async (req, res) => {
+    res.json(await todoService.list(listTodosQuerySchema.parse(req.query)));
   });
 
   router.post('/', async (req, res) => {

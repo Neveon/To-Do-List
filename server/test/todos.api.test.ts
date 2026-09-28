@@ -130,6 +130,78 @@ describe('GET /api/todos', () => {
 
     expect((await request(app).get('/api/todos')).body).toEqual([first, second]);
   });
+
+  describe('filtering and sorting', () => {
+    // NOW is 2026-09-27; these due dates are far enough away to be unambiguous in any time zone.
+    beforeEach(async () => {
+      await createTodo({ title: 'Future', dueDate: '2026-12-01' });
+      await createTodo({ title: 'Late B', dueDate: '2026-09-20' });
+      await createTodo({ title: 'No due date' });
+      const lateDone = await createTodo({ title: 'Late but done', dueDate: '2026-09-01' });
+      await request(app).post(`/api/todos/${lateDone.id}/complete`).expect(200);
+      await createTodo({ title: 'Late A', dueDate: '2026-09-10' });
+    });
+
+    async function listTitles(query: string): Promise<string[]> {
+      const response = await request(app).get(`/api/todos${query}`).expect(200);
+      return (response.body as Todo[]).map((todo) => todo.title);
+    }
+
+    it.each([
+      ['?status=completed', ['Late but done']],
+      ['?status=incomplete', ['Future', 'Late B', 'No due date', 'Late A']],
+      ['?status=overdue', ['Late B', 'Late A']],
+      ['?status=all', ['Future', 'Late B', 'No due date', 'Late but done', 'Late A']],
+    ])('filters with %s', async (query, expected) => {
+      expect(await listTitles(query)).toEqual(expected);
+    });
+
+    it('sorts by due date with todos without one last', async () => {
+      expect(await listTitles('?sortBy=dueDate&order=asc')).toEqual([
+        'Late but done',
+        'Late A',
+        'Late B',
+        'Future',
+        'No due date',
+      ]);
+    });
+
+    it('sorts by title descending', async () => {
+      expect(await listTitles('?sortBy=title&order=desc')).toEqual([
+        'No due date',
+        'Late but done',
+        'Late B',
+        'Late A',
+        'Future',
+      ]);
+    });
+
+    it('combines filtering and sorting', async () => {
+      expect(await listTitles('?status=overdue&sortBy=dueDate&order=asc')).toEqual([
+        'Late A',
+        'Late B',
+      ]);
+    });
+
+    it('responds 400 naming the invalid parameter', async () => {
+      const response = await request(app).get('/api/todos?status=done&order=up');
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Request validation failed',
+          details: [
+            {
+              path: 'status',
+              message: 'status must be one of: all, completed, incomplete, overdue',
+            },
+            { path: 'order', message: 'order must be one of: asc, desc' },
+          ],
+        },
+      });
+    });
+  });
 });
 
 describe('GET /api/todos/:id', () => {
