@@ -1,0 +1,13 @@
+# Keep the build context small and free of local state; dependencies and
+# build output are produced inside the image.
+**/node_modules
+**/dist
+**/coverage
+server/data
+.git
+.env
+.env.*
+*.log
+.DS_Store
+.vscode
+.idea

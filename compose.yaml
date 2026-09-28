@@ -1,0 +1,12 @@
+services:
+  app:
+    build: .
+    image: todo-list
+    ports:
+      - '3000:3000'
+    volumes:
+      - todo-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  todo-data:
